@@ -19,3 +19,4 @@ prediction = model.predict(new_X)
 print(f"\nPrediction for X = 6: {prediction[0]:.2f}")
 
 # Hi this Ikenna
+#Rashid changes$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$44
