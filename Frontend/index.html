@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rescue 1122 - Emergency Management System</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary: #dc3545;
+            --primary-dark: #bb2d3b;
+            --primary-light: #f8d7da;
+            --secondary: #6c757d;
+            --success: #198754;
+            --info: #0dcaf0;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --sidebar-width: 280px;
+            --transition: all 0.3s ease;
+            --shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            --card-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            transition: var(--transition);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #faf8f8;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            width: var(--sidebar-width);
+            padding: 76px 0 0;
+            box-shadow: var(--shadow);
+            background: linear-gradient(to bottom, var(--primary), var(--primary-dark));
+            color: white;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .sidebar.show {
+            transform: translateX(0);
+        }
+
+        .sidebar-sticky {
+            position: relative;
+            top: 0;
+            height: calc(100vh - 76px);
+            padding-top: .5rem;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.85);
+            padding: 0.75rem 1rem;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left-color: white;
+        }
+
+        .sidebar .nav-link i {
+            width: 24px;
+        }
+
+        .sidebar-heading {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            padding: 0 1rem;
+            margin-top: 1rem;
+        }
+
+        /* Navbar */
+        .navbar {
+            box-shadow: var(--shadow);
+            background: linear-gradient(to right, var(--primary), var(--primary-dark));
+            padding: 0.75rem 1rem;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.4rem;
+        }
+
+        /* Main content */
+        main {
+            margin-left: 0;
+            padding-top: 76px;
+            transition: margin-left 0.3s ease-in-out;
+        }
+
+        @media (min-width: 768px) {
+            .sidebar {
+                transform: translateX(0);
+            }
+            
+            main {
+                margin-left: var(--sidebar-width);
+            }
+            
+            .navbar-toggler {
+                display: none;
+            }
+        }
+
+        /* Cards */
+        .card {
+            border: none;
+            border-radius: 0.75rem;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+        }
+
+        .stats-card {
+            color: white;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+
+        .stats-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+            z-index: -1;
+        }
+
+        .stats-card .card-footer {
+            background-color: rgba(0, 0, 0, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Tables */
+        .table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .table th {
+            border-top: none;
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: var(--secondary);
+            background-color: #f8f9fa;
+            padding: 0.75rem 1rem;
+        }
+
+        .table td {
+            padding: 1rem;
+            vertical-align: middle;
+        }
+
+        .table-hover tbody tr {
+            transition: background-color 0.2s ease;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(220, 53, 69, 0.05);
+            transform: translateX(5px);
+        }
+
+        /* Buttons */
+        .btn {
+            border-radius: 0.5rem;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, var(--primary), var(--primary-dark));
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(to right, var(--primary-dark), #a71d2a);
+            transform: translateY(-2px);
+            box-shadow: 0 0.5rem 1rem rgba(220, 53, 69, 0.3);
+        }
+
+        /* Forms */
+        .form-control, .form-select {
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            border: 1px solid #dee2e6;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+        }
+
+        /* Map */
+        #map {
+            height: 400px;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        /* Animations */
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .animate-slide-in {
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Badges */
+        .badge {
+            font-weight: 500;
+            padding: 0.35em 0.65em;
+            border-radius: 0.5rem;
+        }
+
+        /* Tabs */
+        .nav-tabs .nav-link {
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: var(--secondary);
+            padding: 0.75rem 1rem;
+            font-weight: 500;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: var(--primary);
+            background: transparent;
+            border-bottom-color: var(--primary);
+        }
+
+        /* Toast notifications */
+        .toast {
+            border-radius: 0.75rem;
+            box-shadow: var(--shadow);
+            border: none;
+        }
+
+        /* Loading spinner */
+        .spinner-border {
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 767.98px) {
+            .sidebar {
+                width: 100%;
+                z-index: 1031;
+            }
+            
+            .stats-card {
+                margin-bottom: 1rem;
+            }
+            
+            .table-responsive {
+                font-size: 0.875rem;
+            }
+            
+            .btn {
+                padding: 0.375rem 0.75rem;
+                font-size: 0.875rem;
+            }
+        }
+
+        /* Custom utilities */
+        .text-gradient {
+            background: linear-gradient(to right, var(--primary), var(--primary-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hover-lift {
+            transition: transform 0.3s ease;
+        }
+
+        .hover-lift:hover {
+            transform: translateY(-3px);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container-fluid">
+            <button class="navbar-toggler me-2" type="button" id="sidebarToggle">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-ambulance me-2"></i>Rescue 1122
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" data-bs-toggle="tab" data-bs-target="#dashboard-tab">
+                            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#emergencies-tab">
+                            <i class="bi bi-exclamation-triangle me-1"></i>Emergencies
+                            <span class="badge bg-light text-danger ms-1" id="active-emergencies-count">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#ambulances-tab">
+                            <i class="bi bi-ambulance me-1"></i>Ambulances
+                            <span class="badge bg-light text-danger ms-1" id="available-ambulances-count">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#drivers-tab">
+                            <i class="bi bi-people me-1"></i>Drivers
+                            <span class="badge bg-light text-danger ms-1" id="available-drivers-count">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#reports-tab">
+                            <i class="bi bi-graph-up me-1"></i>Reports
+                        </a>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center text-white">
+                    <div class="me-3">
+                        <i class="bi bi-person-circle me-1"></i>
+                        <span id="username">Admin User</span>
+                    </div>
+                    <button class="btn btn-outline-light btn-sm" id="logout-btn">
+                        <i class="bi bi-box-arrow-right me-1"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="position-sticky pt-3">
+            <ul class="nav flex-column" id="sidebar-nav">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#" data-bs-toggle="tab" data-bs-target="#dashboard-tab">
+                        <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#new-emergency-tab">
+                        <i class="bi bi-plus-circle me-2"></i>New Emergency
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#active-emergencies-tab">
+                        <i class="bi bi-exclamation-octagon me-2"></i>Active Emergencies
+                        <span class="badge bg-light text-danger rounded-pill ms-2" id="active-emergencies-sidebar-count">0</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#ambulances-tab">
+                        <i class="bi bi-ambulance me-2"></i>Ambulances
+                        <span class="badge bg-light text-primary rounded-pill ms-2" id="available-ambulances-sidebar-count">0</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#drivers-tab">
+                        <i class="bi bi-people me-2"></i>Drivers
+                        <span class="badge bg-light text-success rounded-pill ms-2" id="available-drivers-sidebar-count">0</span>
+                    </a>
+                </li>
+                <li class="nav-item mt-4">
+                    <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1">
+                        <span>Reports</span>
+                    </h6>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#reports-tab">
+                        <i class="bi bi-graph-up me-2"></i>Analytics
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div class="tab-content" id="mainContent">
+            <!-- Dashboard Tab -->
+            <div class="tab-pane fade show active" id="dashboard-tab">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2 text-gradient">Dashboard</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary">Today</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary">This Week</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary">This Month</button>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle">
+                            <i class="bi bi-download me-1"></i> Export
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="row mb-4">
+                    <div class="col-xl-3 col-md-6 mb-4 animate-slide-in">
+                        <div class="stats-card bg-primary">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="card-title text-uppercase mb-0">Active Emergencies</h6>
+                                        <h2 class="mt-2 mb-0" id="active-emergencies-card-count">0</h2>
+                                    </div>
+                                    <i class="bi bi-exclamation-triangle fs-1 opacity-50"></i>
+                                </div>
+                            </div>
+                            <div class="card-footer d-flex align-items-center justify-content-between">
+                                <a class="small text-white stretched-link" href="#" data-bs-toggle="tab" data-bs-target="#active-emergencies-tab">View Details</a>
+                                <div class="small text-white"><i class="bi bi-chevron-right"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4 animate-slide-in" style="animation-delay: 0.1s;">
+                        <div class="stats-card bg-success">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="card-title text-uppercase mb-0">Available Ambulances</h6>
+                                        <h2 class="mt-2 mb-0" id="available-ambulances-card-count">0</h2>
+                                    </div>
+                                    <i class="bi bi-ambulance fs-1 opacity-50"></i>
+                                </div>
+                            </div>
+                            <div class="card-footer d-flex align-items-center justify-content-between">
+                                <a class="small text-white stretched-link" href="#" data-bs-toggle="tab" data-bs-target="#ambulances-tab">View Details</a>
+                                <div class="small text-white"><i class="bi bi-chevron-right"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4 animate-slide-in" style="animation-delay: 0.2s;">
+                        <div class="stats-card bg-warning">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="card-title text-uppercase mb-0">Available Drivers</h6>
+                                        <h2 class="mt-2 mb-0" id="available-drivers-card-count">0</h2>
+                                    </div>
+                                    <i class="bi bi-people fs-1 opacity-50"></i>
+                                </div>
+                            </div>
+                            <div class="card-footer d-flex align-items-center justify-content-between">
+                                <a class="small text-white stretched-link" href="#" data-bs-toggle="tab" data-bs-target="#drivers-tab">View Details</a>
+                                <div class="small text-white"><i class="bi bi-chevron-right"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-4 animate-slide-in" style="animation-delay: 0.3s;">
+                        <div class="stats-card bg-info">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="card-title text-uppercase mb-0">Today's Emergencies</h6>
+                                        <h2 class="mt-2 mb-0" id="todays-emergencies-count">0</h2>
+                                    </div>
+                                    <i class="bi bi-calendar-event fs-1 opacity-50"></i>
+                                </div>
+                            </div>
+                            <div class="card-footer d-flex align-items-center justify-content-between">
+                                <a class="small text-white stretched-link" href="#" data-bs-toggle="tab" data-bs-target="#reports-tab">View Details</a>
+                                <div class="small text-white"><i class="bi bi-chevron-right"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Emergencies -->
+                <div class="card mb-4 animate-fade-in">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-exclamation-triangle me-2"></i>Recent Emergencies</span>
+                        <a href="#" class="btn btn-sm btn-outline-primary" data-bs-toggle="tab" data-bs-target="#emergencies-tab">View All</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" id="recent-emergencies-table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Reporter</th>
+                                        <th>Phone</th>
+                                        <th>Location</th>
+                                        <th>Status</th>
+                                        <th>Time</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-emergencies-body">
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other tabs would follow the same pattern with enhanced styling -->
+            <!-- Content for other tabs would go here -->
+            
+        </div>
+    </main>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Toggle sidebar
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.querySelector('main');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('show');
+                    
+                    if (window.innerWidth >= 768) {
+                        if (mainContent.style.marginLeft === '280px') {
+                            mainContent.style.marginLeft = '0';
+                        } else {
+                            mainContent.style.marginLeft = '280px';
+                        }
+                    }
+                });
+            }
+            
+            // Close sidebar when clicking outside on mobile
+            document.addEventListener('click', function(event) {
+                if (window.innerWidth < 768 && 
+                    sidebar.classList.contains('show') && 
+                    !sidebar.contains(event.target) && 
+                    !sidebarToggle.contains(event.target)) {
+                    sidebar.classList.remove('show');
+                }
+            });
+            
+            // Initialize tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (el) {
+                return new bootstrap.Tooltip(el);
+            });
+            
+            // Tab change animation
+            const tabLinks = document.querySelectorAll('[data-bs-toggle="tab"]');
+            tabLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    const target = this.getAttribute('data-bs-target');
+                    const tabPane = document.querySelector(target);
+                    
+                    if (tabPane) {
+                        tabPane.classList.remove('animate-fade-in');
+                        setTimeout(() => {
+                            tabPane.classList.add('animate-fade-in');
+                        }, 10);
+                    }
+                });
+            });
+            
+            // Simulate loading data
+            setTimeout(() => {
+                // Update counts with animation
+                animateValue('active-emergencies-card-count', 0, 12, 1000);
+                animateValue('available-ambulances-card-count', 0, 8, 1000);
+                animateValue('available-drivers-card-count', 0, 10, 1000);
+                animateValue('todays-emergencies-count', 0, 5, 1000);
+                
+                // Update other counts
+                document.getElementById('active-emergencies-count').textContent = '12';
+                document.getElementById('available-ambulances-count').textContent = '8';
+                document.getElementById('available-drivers-count').textContent = '10';
+                document.getElementById('active-emergencies-sidebar-count').textContent = '12';
+                document.getElementById('available-ambulances-sidebar-count').textContent = '8';
+                document.getElementById('available-drivers-sidebar-count').textContent = '10';
+                
+                // Update recent emergencies table
+                const recentEmergenciesBody = document.getElementById('recent-emergencies-body');
+                if (recentEmergenciesBody) {
+                    recentEmergenciesBody.innerHTML = `
+                        <tr class="animate-fade-in">
+                            <td>#1042</td>
+                            <td>Ahmed Khan</td>
+                            <td>0300-1234567</td>
+                            <td>Gulberg, Lahore</td>
+                            <td><span class="badge bg-warning">In Progress</span></td>
+                            <td>2 minutes ago</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> View
+                                </button>
+                            </td>
+                        </tr>
+                        <tr class="animate-fade-in" style="animation-delay: 0.1s;">
+                            <td>#1041</td>
+                            <td>Fatima Ali</td>
+                            <td>0312-9876543</td>
+                            <td>DHA Phase 5</td>
+                            <td><span class="badge bg-success">Resolved</span></td>
+                            <td>15 minutes ago</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> View
+                                </button>
+                            </td>
+                        </tr>
+                        <tr class="animate-fade-in" style="animation-delay: 0.2s;">
+                            <td>#1040</td>
+                            <td>Usman Ahmed</td>
+                            <td>0333-4567890</td>
+                            <td>Model Town</td>
+                            <td><span class="badge bg-primary">Dispatched</span></td>
+                            <td>25 minutes ago</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> View
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }
+            }, 1500);
+            
+            // Value animation function
+            function animateValue(id, start, end, duration) {
+                const element = document.getElementById(id);
+                if (!element) return;
+                
+                const range = end - start;
+                const increment = end > start ? 1 : -1;
+                const stepTime = Math.abs(Math.floor(duration / range));
+                let current = start;
+                
+                const timer = setInterval(function() {
+                    current += increment;
+                    element.textContent = current;
+                    
+                    if (current === end) {
+                        clearInterval(timer);
+                    }
+                }, stepTime);
+            }
+            
+            // Initialize map if on emergency tab
+            if (document.getElementById('map')) {
+                const map = L.map('map').setView([31.5204, 74.3587], 12);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(map);
+                
+                // Store map instance
+                window.emergencyMap = map;
+                
+                // Add click handler for map
+                map.on('click', function(e) {
+                    const { lat, lng } = e.latlng;
+                    const latInput = document.getElementById('latitude');
+                    const lngInput = document.getElementById('longitude');
+                    if (latInput && lngInput) {
+                        latInput.value = lat.toFixed(6);
+                        lngInput.value = lng.toFixed(6);
+                    }
+                });
+            }
+            
+            // Add event listeners
+            document.getElementById('get-location-btn')?.addEventListener('click', function() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(position) {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        const latInput = document.getElementById('latitude');
+                        const lngInput = document.getElementById('longitude');
+                        if (latInput && lngInput) {
+                            latInput.value = lat.toFixed(6);
+                            lngInput.value = lng.toFixed(6);
+                            if (window.emergencyMap) {
+                                window.emergencyMap.setView([lat, lng], 15);
+                                L.marker([lat, lng]).addTo(window.emergencyMap);
+                            }
+                        }
+                    });
+                } else {
+                    alert('Geolocation is not supported by this browser.');
+                }
+            });
+            
+            // Handle form submission
+            document.getElementById('emergency-form')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Show success notification
+                const toast = new bootstrap.Toast(document.getElementById('toast'));
+                const toastBody = document.querySelector('.toast-body');
+                toastBody.textContent = 'Emergency reported successfully!';
+                document.getElementById('toast').classList.add('bg-success');
+                toast.show();
+                
+                // Reset form
+                this.reset();
+                
+                // Redirect to active emergencies after a delay
+                setTimeout(() => {
+                    const activeTab = document.querySelector('[data-bs-target="#active-emergencies-tab"]');
+                    if (activeTab) {
+                        activeTab.click();
+                    }
+                }, 1500);
+            });
+        });
+    </script>
+</body>
+</html>
